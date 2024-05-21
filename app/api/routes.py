@@ -31,6 +31,11 @@ def load_server(app):
     def get_blueprint_route(slug : str):
       return get_blueprint_detail(slug)
 
+    @app.post('/blueprint/{slug}', summary="add a blueprint ",description="add blue print by admin")
+    def add_blueprint_route(req:BluePrintModel):
+        add_blueprint_logic(req)
+
+
 
 
 
