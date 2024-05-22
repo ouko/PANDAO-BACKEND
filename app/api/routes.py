@@ -1,10 +1,12 @@
+import uuid
+
 from fastapi import FastAPI
 from .logic import health as health_handler
 from .logic.auth.users import user_login_req
 from .logic.blueprint import get_blueprints, add_blueprint as add_blueprint_logic, get_blueprint_detail
 from .forms import *
 from .logic.community import get_community
-from .logic.community.community import create_community
+from .logic.community.community import create_community, get_user_community
 
 
 def load_server(app):
@@ -40,6 +42,10 @@ def load_server(app):
     @app.get('/community',summary="get communities of the platform ",description="get communities of platform")
     def get_community_route():
         return get_community()
+
+    @app.get('/community/{user_addr}', summary="get communities of the platform ", description="get communities of platform")
+    def get_community_user_route(user_addr: str):
+        return get_user_community(user_addr)
 
     @app.post('/community',summary="create a community on platform ",description="create community on platform")
     def post_community_route(req:CommunityCreate):

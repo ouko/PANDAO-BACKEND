@@ -64,8 +64,8 @@ class Community(Base):
 class Participants(Base):
     __tablename__ = 'participants'
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    community_id = Column(UUID(as_uuid=True),foreign_key='community.id')
-    user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'))
+    community_id = Column(UUID(as_uuid=True),ForeignKey('community.id'))
+    user_addr = Column(String, ForeignKey('users.public_address'))
 
 
 engine = create_engine('postgresql://pandao_database_user:lhLX8ipBc7O7QKUu8z5HL31iHTJgavO8@dpg-cp12prvjbltc73e6l0tg-a.oregon-postgres.render.com/pandao_database')

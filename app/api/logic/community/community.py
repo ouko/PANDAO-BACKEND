@@ -19,6 +19,10 @@ def get_community():
     communities = conn.query(Com).options(joinedload(Com.owner)).all()
     return communities
 
+def get_user_community(user_addr: str):
+    communities = conn.query(Com).options(joinedload(Com.owner)).filter(User.public_address == user_addr).all()
+    return communities
+
 def create_community(community: CommunityCreate):
     db_community = Com(
         name=community.name,
