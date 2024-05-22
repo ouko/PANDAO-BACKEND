@@ -12,6 +12,7 @@ class User(Base):
     public_address = Column(String, primary_key=True)
     last_login = Column(DateTime)
     email = Column(String)
+    communities = relationship("Community", backref="owner")
 
 class BluePrint(Base):
     __tablename__ = 'blueprints'
@@ -21,6 +22,7 @@ class BluePrint(Base):
     price = Column(Integer)
     methods = relationship("Methods", backref="blueprint")
     package_addr = Column(String, nullable=False)
+    deploy_manifests = relationship("DeployManifest", backref="blueprint")
 
 class Terms(Base):
     __tablename__ = 'terms'
@@ -45,13 +47,26 @@ class MethodArgs(Base):
     m_type = Column(String(100))
     description = Column(String(100))
 
+class DeployManifest(Base):
+    __tablename__ = 'deploymanifest'
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    manifest = Column(String, nullable=False)
+    blueprint_slug = Column(String(2048), ForeignKey('blueprints.slug'), nullable=False)
+
 class Community(Base):
     __tablename__ = 'community'
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, nullable=False)
     name = Column(String(128))
     component_address = Column(String(2048))
     description = Column(String)
-    owner_address = Column(String(2048),ForeignKey('users.public_address'))
+    owner_address = Column(String(2048), ForeignKey('users.public_address'))
+
+class Participants(Base):
+    __tablename__ = 'participants'
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    community_id = Column(UUID(as_uuid=True),foreign_key='community.id')
+    user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'))
+
 
 engine = create_engine('postgresql://pandao_database_user:lhLX8ipBc7O7QKUu8z5HL31iHTJgavO8@dpg-cp12prvjbltc73e6l0tg-a.oregon-postgres.render.com/pandao_database')
 Base.metadata.create_all(engine)

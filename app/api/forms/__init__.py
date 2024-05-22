@@ -51,3 +51,12 @@ class BluePrintModel(BaseModel):
     class Config:
         orm_mode = True
         from_attributes = True
+
+
+class CommunityCreate(BaseModel):
+    name: Optional[str] = Field(None, max_length=128)
+    component_address: Optional[str] = Field(None, max_length=2048)
+    description: Optional[str]
+    owner_address: str = Field(..., max_length=2048)
+
+
