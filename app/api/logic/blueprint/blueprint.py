@@ -19,7 +19,7 @@ def add_blueprint(req: BlurPrintForm):
             slug=req.slug,
             description=req.description,
             price=req.price,
-            package_addr=req.package_addr
+            package_addr=req.package_address
         )
 
         # Add terms if provided
@@ -27,7 +27,7 @@ def add_blueprint(req: BlurPrintForm):
             for term in req.terms:
                 new_term = BluePrintTerms(
                     blueprint_slug=req.slug,
-                    term=term.key,
+                    term=term.term,
                     description=term.description
                 )
                 new_blueprint.terms.append(new_term)
@@ -41,7 +41,7 @@ def add_blueprint(req: BlurPrintForm):
             for args in req.deploy_manifest.manifest_args:
                 arg = DeployManifestArgs(
                     key=args.key,
-                    type=args.type
+                    type=str(args.value)
                 )
                 manifest_args.append(arg)
             manifest.deploymanifestargs = manifest_args
@@ -60,6 +60,31 @@ def add_blueprint(req: BlurPrintForm):
         raise HTTPException(status_code=400,
                             detail="Integrity error: possibly duplicate entry or foreign key constraint.")
 
+    except SQLAlchemyError as e:
+        conn.rollback()
+        logger.error(f"SQLAlchemy error occurred: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+    except Exception as e:
+        conn.rollback()
+        logger.error(f"Unexpected error occurred: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+
+def get_blueprint_deploymanifest(slug: str):
+    try:
+        stmt = (select(BluePrint, DeployManifest, DeployManifestArgs).join(DeployManifest,
+                                                                                               BluePrint.slug == DeployManifest.blueprint_slug).join(
+            DeployManifestArgs, DeployManifestArgs.blueprint_slug == DeployManifest.blueprint_slug)).where(
+            BluePrint.slug == slug)
+
+        blueprint, manifest, args = conn.execute(stmt).first()
+
+        return {
+            'blueprint': blueprint,
+            'manifest': manifest,
+            'agrs': args
+        }
     except SQLAlchemyError as e:
         conn.rollback()
         logger.error(f"SQLAlchemy error occurred: {e}")

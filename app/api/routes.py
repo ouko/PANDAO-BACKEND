@@ -6,8 +6,10 @@ from .logic import health as health_handler
 from .logic.auth.users import user_login_req, user_sign_up, check_user_exist, get_user_detail
 from .logic.blueprint import get_blueprints, add_blueprint as add_blueprint_logic, get_blueprint_detail
 from .forms import *
+from .logic.blueprint.blueprint import get_blueprint_deploymanifest
 from .logic.community import get_community
 from .logic.community.community import create_community, get_user_community
+from .utils.presignurl import get_pre_sign_url
 
 
 def load_server(app):
@@ -16,6 +18,11 @@ def load_server(app):
     @app.get('/')
     def health_check():
         return health_handler()
+
+    @app.get('/get-resign-url/{random_id}')
+    def get_pre_sign_url_route(random_id: str):
+        return get_pre_sign_url(random_id)
+
 
     # api for user to register
     @app.post('/user/signup', status_code=status.HTTP_201_CREATED)
@@ -40,10 +47,15 @@ def load_server(app):
     def get_blueprint_route():
         return get_blueprints()
 
-    @app.get('/blueprint/{slug}', summary="get detail about a single blueprint",
+    @app.get('/blueprint/detail/{slug}', summary="get detail about a single blueprint",
              description="get detail about a single blueprint")
     def get_blueprint_route(slug: str):
         return get_blueprint_detail(slug)
+
+    @app.get('/blueprint/manifest/{slug}', summary="get blueprint manifest",
+             description="get manigest and args of a blueprint")
+    def get_blueprint_manifest_route(slug: str):
+        return get_blueprint_deploymanifest(slug)
 
     @app.post('/blueprint', summary="add a blueprint ", description="add blue print by admin")
     def add_blueprint_route(req: BlurPrintForm):
