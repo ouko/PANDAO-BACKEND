@@ -11,6 +11,7 @@ from .logic.community import get_community
 from .logic.community.community import create_community, get_user_community
 from .utils.presignurl import get_pre_sign_url
 
+#
 
 def load_server(app):
     # defines routes
