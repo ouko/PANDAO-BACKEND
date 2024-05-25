@@ -1,79 +1,79 @@
 import uuid
+import logging
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from app.api.forms import *
+from app.api.utils import ApiError
+from models import dbsession as conn, BluePrint, BluePrintTerms, BluePrintMethod, DeployManifest, DeployManifestArgs
+from fastapi import HTTPException
 
-from sqlalchemy.exc import IntegrityError
-
-from app.api.forms import BluePrintModel, TermsModel, MethodArgsModel, MethodsModel
-from models import dbsession as conn, BluePrint, Terms, Methods, MethodArgs
-from fastapi import FastAPI, HTTPException, Depends
-from sqlalchemy.exc import SQLAlchemyError
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
-
-def add_blueprint(blueprint_input:BluePrintModel):
+def add_blueprint(req: BlurPrintForm):
     try:
         # Create a new BluePrint instance using the validated data
         new_blueprint = BluePrint(
-            slug=blueprint_input.slug,
-            description=blueprint_input.description,
-            price=blueprint_input.price,
-            package_addr=blueprint_input.package_addr
+            slug=req.slug,
+            description=req.description,
+            price=req.price,
+            package_addr=req.package_addr
         )
 
         # Add terms if provided
-        if blueprint_input.terms:
-            for term in blueprint_input.terms:
-                new_term = Terms(
-                    blueprint_slug=blueprint_input.slug,
-                    key=term.key,
+        if req.terms:
+            for term in req.terms:
+                new_term = BluePrintTerms(
+                    blueprint_slug=req.slug,
+                    term=term.key,
                     description=term.description
                 )
                 new_blueprint.terms.append(new_term)
 
-        # Add methods if provided
-        m_args = []
-        if blueprint_input.methods:
-
-            for method in blueprint_input.methods:
-                new_method_id = method.id or uuid.uuid4(),
-                new_method = Methods(
-                    id=new_method_id,
-                    blueprint_slug=blueprint_input.slug,
-                    name=method.name,
-                    description=method.description,
-                    is_function=method.is_function
+        if req.deploy_manifest:
+            manifest = DeployManifest(
+                manifest=req.deploy_manifest.mainfest,
+                blueprint_slug=req.slug
+            )
+            manifest_args = []
+            for args in req.deploy_manifest.manifest_args:
+                arg = DeployManifestArgs(
+                    key=args.key,
+                    type=args.type
                 )
+                manifest_args.append(arg)
+            manifest.deploymanifestargs = manifest_args
 
-                # Add method arguments if provided
-                if method.args:
-                    for arg in method.args:
-                        new_arg = MethodArgs(
-                            id=arg.id or uuid.uuid4(),
-                            method_id=new_method_id,
-                            name=arg.name,
-                            m_type=arg.m_type,
-                            description=arg.description
-                        )
-
-                        m_args.append(new_arg)
-
-                new_blueprint.methods.append(new_method)
+        new_blueprint.deploy_mainfest = manifest
 
         # Add the new blueprint to the conn and commit
         conn.add(new_blueprint)
         conn.commit()
+        logger.info(f"Successfully added new blueprint: {new_blueprint.slug}")
+        return new_blueprint
+
+    except IntegrityError as e:
+        conn.rollback()
+        logger.error(f"Integrity error occurred: {e}")
+        raise HTTPException(status_code=400,
+                            detail="Integrity error: possibly duplicate entry or foreign key constraint.")
 
     except SQLAlchemyError as e:
-        # Log the error e
-        print(e)
+        conn.rollback()
+        logger.error(f"SQLAlchemy error occurred: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-
-
+    except Exception as e:
+        conn.rollback()
+        logger.error(f"Unexpected error occurred: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
 def get_blueprints():
     try:
-        blueprint = conn.query(BluePrint).all()
+        blueprint = conn.query(BluePrint).join(BluePrintTerms, BluePrint.slug == BluePrintTerms.blueprint_slug).all()
         if blueprint is None:
             return {}
         return blueprint
@@ -88,6 +88,8 @@ def get_blueprint_detail(slug: str):
     try:
         # Query the blueprint by slug
         blueprint = conn.query(BluePrint).filter(BluePrint.slug == slug).first()
+
+        return blueprint
 
         if not blueprint:
             return None

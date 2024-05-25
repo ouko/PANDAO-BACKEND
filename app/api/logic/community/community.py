@@ -3,8 +3,8 @@ import uuid
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
-from app.api.forms import CommunityCreate
-from models import dbsession as conn, BluePrint, Terms, Methods, MethodArgs ,Community as Com , User
+
+from models import dbsession as conn, BluePrint, Community as Com , User
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -14,7 +14,8 @@ from typing import List, Optional
 from uuid import UUID
 from datetime import datetime
 
-
+class CommunityCreate:
+    pass
 def get_community():
     communities = conn.query(Com).options(joinedload(Com.owner)).all()
     return communities
